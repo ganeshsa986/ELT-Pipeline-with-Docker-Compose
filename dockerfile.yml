@@ -1,0 +1,96 @@
+version: "3.9"
+
+services:
+
+  airflow:
+    image: apache/airflow:2.8.1
+    container_name: airflow
+    restart: always
+    depends_on:
+      - metadata-db
+      - prod-db
+    environment:
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow-script/entrypoint.sh:/opt/airflow/entrypoint.sh
+      - ./airflow/config/webserver_config.py:/opt/airflow/webserver_config.py
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    entrypoint: ["/bin/bash", "/opt/airflow/entrypoint.sh"]
+
+    ports:
+      - "8090:8080"
+    networks:
+      - default
+
+  metadata-db:
+    image: postgres:13
+    container_name: elt-pipeline-metadata-db
+    environment:
+      POSTGRES_USER: metadata_user
+      POSTGRES_PASSWORD: metadata_pass
+      POSTGRES_DB: metadata_db
+    volumes:
+      - metadatapgdata:/var/lib/postgresql/data
+      - ./metadata-db-init:/docker-entrypoint-initdb.d
+    ports:
+      - "5434:5432"  # Use different port from other DBs
+    networks:
+      - default
+
+  file-watcher:
+    build: ./file-watcher
+    volumes:
+      - ./data:/app/source_data
+    depends_on:
+      - metadata-db
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  prod-db:
+    image: postgres:13
+    container_name: elt-pipeline-prod-db
+    environment:
+      POSTGRES_USER: prod_user
+      POSTGRES_PASSWORD: prod_pass
+      POSTGRES_DB: analytics_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - targetdata:/var/lib/postgresql/data
+    networks:
+      - default
+
+
+  superset:
+    image: apache/superset:3.0.1
+    container_name: superset
+    ports:
+      - "8088:8088"
+    environment:
+      - SUPERSET_SECRET_KEY=your_superset_secret_key
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=admin
+      - ADMIN_FIRST_NAME=Admin
+      - ADMIN_LAST_NAME=User
+      - ADMIN_EMAIL=admin@superset.com
+    depends_on:
+      - prod-db
+    volumes:
+      - superset_home:/app/superset_home
+      - ./superset/config/superset_config.py:/app/pythonpath/superset_config.py
+    command: >
+      /bin/bash -c "
+      superset db upgrade &&
+      superset fab create-admin --username admin --firstname Admin --lastname User --email admin@superset.com --password admin &&
+      superset init &&
+      superset run -h 0.0.0.0 -p 8088"
+
+
+volumes:
+  targetdata:
+  metadatapgdata:
+  superset_home:
