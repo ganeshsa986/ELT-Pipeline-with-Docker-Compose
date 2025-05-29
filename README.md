@@ -90,3 +90,17 @@ This step allows the Docker container to access your local data files during the
 
 ## How to Run
 
+1. Clone the repository:
+  git clone https://github.com/yourusername/ELT-Pipeline-with-Docker-Compose.git
+  cd ELT-Pipeline-with-Docker-Compose
+
+2. Update the data folder path in the Airflow DAG as described above.
+
+3. Start the Docker Compose stack:
+  docker-compose -f dockerfile.yml up -d
+
+4. Connect to PostgreSQL Databases Metadata DB and confirm if the empty table incoming files exists.
+  select * from incoming_files;
+
+
+
