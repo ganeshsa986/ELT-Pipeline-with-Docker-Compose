@@ -48,6 +48,8 @@ This project implements a containerized ELT (Extract, Load, Transform) pipeline 
 - Runs Spark job in a Docker container.
 - Mounts local source data folder inside container.
 
+---
+
 ## Prerequisites
 
 - Docker & Docker Compose installed on your machine
@@ -84,4 +86,7 @@ Mount(
 
 This step allows the Docker container to access your local data files during the Spark job execution.
 
-##How to Run
+---
+
+## How to Run
+
