@@ -90,17 +90,53 @@ This step allows the Docker container to access your local data files during the
 
 ## How to Run
 
-1. Clone the repository:
-  git clone https://github.com/yourusername/ELT-Pipeline-with-Docker-Compose.git
-  cd ELT-Pipeline-with-Docker-Compose
+1. **Clone the repository:**
+- git clone https://github.com/yourusername/ELT-Pipeline-with-Docker-Compose.git
+- cd ELT-Pipeline-with-Docker-Compose
 
-2. Update the data folder path in the Airflow DAG as described above.
+2. **Update the data folder path in the Airflow DAG as described above.**
 
-3. Start the Docker Compose stack:
-  docker-compose -f dockerfile.yml up -d
+3. **Start the Docker Compose stack:**
+- docker-compose -f dockerfile.yml up -d
 
-4. Connect to PostgreSQL Databases Metadata DB and confirm if the empty table incoming files exists.
-  select * from incoming_files;
+4. **Connect to the Metadata PostgreSQL Database and confirm the incoming_files table exists:**
+- SELECT * FROM incoming_files;
 
+5. **Add Input File**
+- Copy the file customer_churn_data.csv from your input dataset into the data/ folder.
 
+6. **Watch File Detection:**
+- Once the file is added, the watcher service will insert its metadata into the incoming_files table with status Pending.
 
+7. **Verify Metadata Entry**
+- SELECT * FROM incoming_files;
+
+8. **Build Spark Runner Image**
+- Navigate to the spark-runner folder and run:
+- docker build -t spark-runner .
+
+9. **Verify the image exists:**
+- docker images
+
+10. **Access Airflow Environment:**
+- Go to http://localhost:8090/login/
+- Username: admin
+- Password: admin
+- Run the customer-etl-pipeline DAG. It will:
+  - Read pending files from the metadata DB
+  - Transform the data
+  - Write results to long_term_customers and churn_summary in the analytics DB
+  - Verify output tables:
+    - SELECT * FROM long_term_customers;
+    - SELECT * FROM churn_summary;
+
+11. **Access Superset**
+- Open http://localhost:8088/login/
+  - Username: admin
+  - Password: admin
+- It will not include any datasources, charts, or dashboards. I have already created and exported a dashboard—just import it, and you should be able to visualize the data.
+  - Click on import Dashboards
+  - Select the zip from superset/pre-configured-template
+  - Enter password for:
+    - AnalyticsDB: prod_pass
+    - MetadataDB: metadata_pass
