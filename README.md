@@ -47,3 +47,41 @@ This project implements a containerized ELT (Extract, Load, Transform) pipeline 
 
 - Runs Spark job in a Docker container.
 - Mounts local source data folder inside container.
+
+## Prerequisites
+
+- Docker & Docker Compose installed on your machine
+- Java & Scala build tools (SBT) if you want to build/modify the Spark job
+- DBeaver (or any SQL client) installed to connect and manage PostgreSQL databases visually
+
+| Service       | Host                       | Port | Database      | User           | Password       |
+| ------------- | -------------------------- | ---- | ------------- | -------------- | -------------- |
+| Metadata DB   | localhost (or Docker host) | 5434 | metadata\_db  | metadata\_user | metadata\_pass |
+| Production DB | localhost (or Docker host) | 5433 | analytics\_db | prod\_user     | prod\_pass     |
+
+In DBeaver, create new connections using the above credentials to browse tables like incoming_files, long_term_customers, and churn_summary.
+
+### Update Data Folder Path in Airflow DAG
+  - Before running the pipeline, you need to update the Airflow DAG to mount your local data folder correctly inside the Docker container.
+
+1. Locate your project folder and data directory.
+  - Your project is cloned under a folder named ELT-Pipeline-with-Docker-Compose. The data files should be inside the data subfolder:
+
+2. Find the absolute path to the `data` folder.
+
+  - On **macOS/Linux**, open a terminal, navigate to your project folder, and run: pwd
+  - The output is the absolute path to your project folder. Append /data to get the full path to your data folder.
+
+3. Update the source path in the Airflow DAG file (customer_etl_pipeline.py):
+
+Mount(
+    source='/Users/ganeshsangle986/Documents/Projects/ELT-Pipeline-with-Docker-Compose/data',  # <-- Replace this with your absolute path
+    target='/app/source_data',
+    type='bind'
+)
+
+4. Keep the target path as /app/source_data (path inside the container).
+
+This step allows the Docker container to access your local data files during the Spark job execution.
+
+##How to Run
