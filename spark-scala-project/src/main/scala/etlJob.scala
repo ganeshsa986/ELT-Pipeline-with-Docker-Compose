@@ -6,9 +6,56 @@ import org.apache.spark.sql.functions._
 object etlJob {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder()
-      .appName("Simple Spark App")
-      .master("local[*]")
-      .getOrCreate()
+  	.appName("Simple Spark App")
+  	.master("local[*]")
+  	.config("spark.hadoop.fs.s3a.endpoint", "http://minio:9000")
+  	.config("spark.hadoop.fs.s3a.access.key", "minio_admin")
+  	.config("spark.hadoop.fs.s3a.secret.key", "minio_password")
+	.config("spark.sql.catalog.quickstart_catalog.client.region", "us-east-1")
+  	.config("spark.hadoop.fs.s3a.path.style.access", "true")
+	.config("spark.sql.catalog.quickstart_catalog.s3.remote-signing-enabled", "false")
+  	.config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
+  	.config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false")
+	.config("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions")
+
+	.config("spark.sql.catalog.quickstart_catalog", "org.apache.iceberg.spark.SparkCatalog")
+
+	.config("spark.sql.catalog.quickstart_catalog.type", "rest")
+
+	.config("spark.sql.catalog.quickstart_catalog.uri", "http://elt-pipeline-polaris:8181/api/catalog")
+
+	.config("spark.sql.catalog.quickstart_catalog.oauth2-server-uri", "http://elt-pipeline-polaris:8181/api/catalog/v1/oauth/tokens")
+
+	.config("spark.sql.catalog.quickstart_catalog.warehouse", "quickstart_catalog")
+
+	.config("spark.sql.catalog.quickstart_catalog.credential", "root:s3cr3t")
+
+	.config("spark.sql.catalog.quickstart_catalog.scope", "PRINCIPAL_ROLE:ALL")
+
+	.config("spark.sql.catalog.quickstart_catalog.io-impl", "org.apache.iceberg.aws.s3.S3FileIO")
+
+	.config("spark.sql.catalog.quickstart_catalog.s3.endpoint", "http://minio:9000")
+
+	.config("spark.sql.catalog.quickstart_catalog.s3.access-key-id", "minio_admin")
+
+	.config("spark.sql.catalog.quickstart_catalog.s3.secret-access-key", "minio_password")
+
+	.config("spark.sql.catalog.quickstart_catalog.s3.path-style-access", "true")
+	
+	.config("spark.sql.catalog.quickstart_catalog.metrics-reporter-impl", "org.apache.iceberg.metrics.LoggingMetricsReporter")
+
+  	.getOrCreate()
+
+	println("Listing catalogs...")
+
+	spark.sql("SHOW CATALOGS").show(false)
+
+	spark.sql("""
+	CREATE NAMESPACE IF NOT EXISTS quickstart_catalog.raw
+	""")
+
+	spark.sql("SHOW NAMESPACES IN quickstart_catalog").show(false)
+
     import spark.implicits._
 
     // JDBC connection properties metadata DB
@@ -74,6 +121,13 @@ object etlJob {
           .write
           .mode("append")
           .jdbc(jdbcUrlProd, "churn_summary", connectionPropertiesProd)
+	
+
+	flaggedDf.writeTo(
+	"quickstart_catalog.raw.long_term_customers").createOrReplace()
+
+	churnSummary.writeTo(
+        "quickstart_catalog.raw.churn_summary").createOrReplace()
 
       } catch {
         case e: Exception =>

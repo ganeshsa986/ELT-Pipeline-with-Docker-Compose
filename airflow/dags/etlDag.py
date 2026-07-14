@@ -23,7 +23,7 @@ with DAG(
         api_version='auto',
         auto_remove=True,
         docker_url='unix://var/run/docker.sock',
-        network_mode='default',
+        network_mode='elt-pipeline-with-docker-compose_default',
         mounts=[
             Mount(
                 source= '/Users/ganeshsangle986/Documents/Projects/elt-pipeline/data',
