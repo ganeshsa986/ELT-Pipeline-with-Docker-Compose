@@ -42,7 +42,7 @@ flowchart TB
 
     Polaris["Apache Polaris<br/>REST Catalog & Governance"]
 
-    GovernanceDB[("Polaris Metadata Database<br/>PostgreSQL")]
+    GovernanceDB[("Governance Metadata<br/>PostgreSQL")]
 
     Iceberg["Apache Iceberg"]
 
