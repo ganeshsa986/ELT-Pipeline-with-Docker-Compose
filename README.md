@@ -46,7 +46,7 @@ flowchart TB
 
     Iceberg["Apache Iceberg"]
 
-    MinIO["MinIO<br/>S3 Warehouse"]
+    MinIO["MinIO<br/>Iceberg Warehouse"]
 
     Airflow --> Spark
 
